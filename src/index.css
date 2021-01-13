@@ -1,0 +1,154 @@
+:root {
+  --main-purple: #8823ff;
+}
+
+html{
+    padding:0;
+    margin:0;
+    animation-name: open;
+    animation-duration:4s;
+    animation-timing-function: linear;
+}
+
+body{
+  background-color: unset;
+   padding:20px;
+   margin:0;
+}
+
+section{
+  background-color: unset;
+}
+
+#header{
+    width: 100%;
+    margin: auto;
+    padding-top:45px;
+    background-size: contain;
+    height: 150px;
+    background: var(--main-purple);
+}
+
+h1{
+  font-size: 350%;
+  line-height: 20px;
+  text-align: center;
+  color: #fff;
+}
+
+#header h4 {
+  margin-top: 30px;
+  text-align: center;
+  color: white
+}
+
+.box:hover {
+  border: 3px dotted #666;
+}
+
+#add{
+  padding: 10px;
+  margin: 10px 25px 10px 50px;
+  width: 200px;
+}
+
+#save{
+  padding: 10px;
+  margin: 10px 50px 10px 25px;
+  width: 200px;
+}
+
+#user-info-rankings {
+  min-height: 300px;
+  padding: 20px 0;
+}
+
+textarea, select, input, button { outline: none; }
+
+div.rankingList {
+  border: 3px solid var(--main-purple);
+  border-radius: 5px;
+  padding: 20px;
+  margin-bottom: 10px;
+}
+
+div.rankingList:hover {
+  border: 5px solid var(--main-purple);
+  padding: 18px;
+}
+
+.form-control {
+  outline: none;
+  -webkit-box-shadow: none !important;
+  -moz-box-shadow: none !important;
+  box-shadow: none !important;
+  border-radius: 0px !important;
+}
+
+input {
+  border-color: white !important;
+  border-bottom: 2px solid lightgray !important;
+}
+
+input:focus {
+  border-color: white !important;
+  border-bottom:2px solid rgb(16, 137, 185) !important;
+  box-shadow: red !important;
+}
+
+li.sortable {
+  font-size: 130%;
+  border: .5px dashed grey;
+  margin: 5px 0;
+  padding-left: -10px;
+  list-style-type: none;
+}
+
+#user-info {
+  padding: 10px;
+}
+
+img {
+  /* padding: 0 20px; */
+  border: 5px solid var(--main-purple);
+  border-radius: 60px;
+}
+p.user-info {
+  font-weight: bold;
+}
+
+#newUserForm label {
+  font-weight: 400;
+}
+
+#addLineButton, #removeLineButton {
+  border: none;
+  background-color: unset;
+  outline: none;
+  -webkit-box-shadow: none;
+  -moz-box-shadow: none;
+  box-shadow: none;
+  font-weight: 400;
+}
+
+#addLineButton:hover {
+  color: var(--main-purple);
+}
+
+#removeLineButton:hover {
+  color: darkred;
+}
+
+#title{
+  font-size: 200%;
+  font-weight: 400;
+}
+
+#displayName {
+  font-size: 200%;
+}
+
+select.form-control {
+  width: 200px !important;
+}
+  
