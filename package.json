@@ -17,6 +17,7 @@
     "react-reorder": "^3.0.0-alpha.7",
     "react-scripts": "4.0.1",
     "react-sortable-hoc": "^1.11.0",
+    "react-transition-group": "^1.2.1",
     "web-vitals": "^0.2.4"
   },
   "scripts": {

@@ -155,6 +155,8 @@ const auth = firebase.auth();
     }
   }
 
+//===============The List Component===========================
+
   /** Basic Ranking List with changeable Rankings */
   class RankingList extends React.Component {
     /** Constructor for the Ranked List, loads data. */
@@ -164,10 +166,17 @@ const auth = firebase.auth();
       this.state = {
         items: props.items,
         userEmail: props.userEmail,
-        draggingOn: false,
+        editmode: false,
       }
       
-      this.storeRef = React.createRef();
+      this.handleRemove = this.handleRemove.bind(this)
+    }
+
+    handleRemove(i) {
+      let newItems = this.state.items;
+      newItems.splice(i, 1);
+
+      this.setState({items: newItems})
     }
 
     /** Uses a prompt to add an item to the end of the list */
@@ -189,36 +198,43 @@ const auth = firebase.auth();
           displayName: this.props.listDisplayName,
           items: this.state.items,
           type: this.props.type
-        }).then(alert('Saved!'))
+        })
+      this.setState({editMode: false});
+    }
+
+    /** Saves the updated rankings to the user's profile. */
+    turnOnEditing() {
+      this.setState({editMode: true});
     }
 
     /** Renders the ranked list in order of the saved data. */
     render() {
       
-      const renderedItems = [];
       const items = this.state.items;
+      let editMode = this.state.editMode;
 
-      for (const [index, value] of items.entries()) {
-        renderedItems.push(<RankedItem 
-          index = {index}
-          key = {'item' + index}
-          item = {value}
-          list = {this}
-          listName = {this.props.listName}
-        />)
+      let itemsList = []
+
+      for (let i = 0; i < items.length; i += 1) {
+        itemsList.push(
+        <li key={i}>
+          {items[i]}
+        </li>)
       }
 
       return (
         <div>
           <h4>{this.props.listDisplayName}</h4>
           
-          <SortableComponent items={this.state.items} list={this} />
-
-          {/* <ol>
-            {renderedItems}
-          </ol> */}
+          {editMode ? 
+          <SortableComponent items={this.state.items} list={this} handleRemove={(i) => this.handleRemove(i)}/> : 
+          <ol>{itemsList}</ol>
+          }
           <button id='add' className='btn btn-info' onClick={() => this.handleAdd()}>Add Item</button>
-          <button id='save' className='btn btn-secondary' onClick={() => this.handleSave()}>Save List</button>
+          {editMode ?
+          <button id='editSave' className='btn btn-secondary' onClick={() => this.handleSave()}>Save List</button> :
+          <button id='editSave' className='btn btn-secondary' onClick={() => this.turnOnEditing()}>Edit List</button>
+          }
         </div>
       )
     }
@@ -226,18 +242,19 @@ const auth = firebase.auth();
 
   //============Drag and Drop Functionality============
 
-  const DragHandle = sortableHandle(() => <span>:::</span>);
+  const DragHandle = sortableHandle(() => <img src='https://cdn2.iconfinder.com/data/icons/font-awesome/1792/reorder-512.png' alt=':::' className='sortable'/>);
   const SortableItem = SortableElement(({value}) => 
-    <li class="sortable">
+    <li className="sortable">
       <DragHandle />
       &nbsp;&nbsp;{value}
+      {/* <button onClick={handleRemove(list,index)}>Hi</button> */}
     </li>);
  
-  const SortableList = SortableContainer(({items}) => {
+  const SortableList = SortableContainer(({items, list}) => {
     return (
       <ol>
         {items.map((value, index) => (
-          <SortableItem key={`item-${value}`} index={index} value={value} />
+          <SortableItem key={`item-${value}`} id={console.log(index)} list={list} index={index} value={value} />
         ))}
       </ol>
     );
@@ -250,207 +267,26 @@ const auth = firebase.auth();
         items: props.items,
       };
     }
+
     onSortEnd = ({oldIndex, newIndex}) => {
       this.setState(({items}) => ({
         items: arrayMove(items, oldIndex, newIndex),
       }));
-      this.props.list.setState(({items}) => ({
-        items: this.state.items,
-      }));
+      this.props.list.setState({
+        items: this.state.items});
     };
     render() {
-      return <SortableList items={this.state.items} onSortEnd={this.onSortEnd} useDragHandle/>;
-    }
-  }
-
-  /** Handles the input for changing the rank of an item. */
-  class RankedItem extends React.Component {
-
-    /** Constructor for the input field and text of each list item. */
-    constructor(props) {
-      super(props);
-      this.state = {
-        value: '',
-        itemNum: props.index,
-        key: props.listName + props.index,
-      };
-  
-      this.handleChange = this.handleChange.bind(this);
-      this.handleSubmit = this.handleSubmit.bind(this);
-    }
-  
-    /** Handles the input of text in the input secton of the list item. */
-    handleChange(event) {
-      const val = event.target.value;
-      var intVal = parseInt(val, 10);
-      if (isNaN(intVal) && val !== '') {
-        return
-      }
-      if (val === '') {
-        this.setState({value: val})
-      } else {
-        this.setState({value: intVal});
-      }
-    }
-  
-    /** Handles the event when the user submits an updated ranking for an item/ */
-    handleSubmit(event) {
-      event.preventDefault();
-      rankChange(this.props.list, this.state.itemNum, this.state.value);
-      this.setState({value: ''});
-      this.props.list.forceUpdate();
-    }
-
-    /** Handles the removal of an item. */
-    handleRemove(index) {
-      let list = this.props.list;
-      console.log(index);
-      console.log(list.state.items);
-      list.state.items.splice(index, 1)
-      list.forceUpdate();
-    }
-  
-    /** Renders the ranked item on the screen */
-    render() {
-
-      // let list = this.props.list;
-
-      // // var dragSrcID = null;
-
-      // function getListItem(eventTarget) {
-      //   let listItem = eventTarget;
-      //   listItem = listItem.closest('li');
-
-      //   return listItem
-      // }
-      
-      // function handleDragStart(e) {
-
-      //   const style = e.target.style;
-      //   style.opacity = '0.4';
-      //   style.backgroundColor = 'lightblue';
-      //   style.border = '3px solid darkcyan';
-      //   style.borderRadius = '10px';
-        
-      //   dragSrcID = e.target.id;
-      //   dragSrcClass = e.target.className;
-  
-      //   e.dataTransfer.effectAllowed = 'move';
-      //   e.dataTransfer.setData('text/html', e.target.innerHTML);
-      // }
-  
-      // function handleDragOver(e) {
-      //   if (e.preventDefault) {
-      //     e.preventDefault();
-      //   }
-
-      //   const listItem = getListItem(e.target);
-
-      //   if (listItem) {
-      //     const style = listItem.style;
-      //     style.opacity = '.'
-      //     style.borderTop = '3px solid darkcyan';
-      //     e.dataTransfer.dropEffect = 'move';
-      //   }
-        
-        
-      //   return false;
-      // }
-  
-      // function handleDragEnter(e) {
-      //   const listItem = getListItem(e.target);
-
-      //   if (listItem) {
-      //     listItem.classList.add('over');
-      //   }
-      // }
-  
-      // function handleDragLeave(e) {
-        
-      //   const listItem = getListItem(e.target);
-
-      //   if (listItem) {
-      //     listItem.classList.remove('over');
-      //     const style = listItem.style;
-      //     style.borderTop = 'none';
-      //   }
-      // }
-  
-      // function handleDrop(e) {
-
-      //   if (e.stopPropagation) {
-      //     e.stopPropagation(); // stops the browser from redirecting.
-      //   }
-        
-      //   const listItem = getListItem(e.target);
-
-      //   if (listItem) {
-      //     const style = listItem.style;
-      //     style.opacity = '.'
-      //     style.borderTop = 'none';
-      //   }
-        
-      //   console.log(dragSrcClass);
-      //   console.log(dragSrcID);
-      //   console.log(listItem.id);
-      //   console.log(listItem.className);
-      //   if (dragSrcID !== listItem.id && dragSrcClass === listItem.className) {
-      //     let movedItem = list.state.items.splice(dragSrcID, 1)[0];
-      //     list.state.items.splice(e.target.id, 0, movedItem);
-      //     list.forceUpdate();
-      //   }
-        
-      //   return false;
-      // }
-  
-      // function handleDragEnd(e) {
-        
-      //   const style = e.target.style;
-      //   style.opacity = '1';
-      //   style.backgroundColor = 'unset';
-      //   style.border= 'none';
-      //   style.borderTop = 'none';
-      //   // console.log(this.innerHTML);
-        
-      //   items.forEach(function (item) {
-      //     item.classList.remove('over');
-      //   });
-      // }
-      
-      // let items = document.querySelectorAll('.item');
-
-      return (
-        <li key={this.state.key} id={this.state.itemNum} className={this.props.listName}
-        draggable = 'true'>
-          <form onSubmit={this.handleSubmit} id={this.state.itemNum} className={this.props.listName}>
-            <label>
-              <input type='text' className='form-control' value={this.state.value} onChange={this.handleChange} />
-            </label>
-            <label className={this.props.listName} id={this.state.itemNum}>&nbsp;&nbsp;{this.props.item}&nbsp;&nbsp;</label>
-            <input type='button' className='btn btn-light' onClick={() => this.handleRemove(this.state.itemNum)} value='Remove Item' />
-          </form>
-        </li>
-      );
+      return <SortableList items={this.state.items} list={this.props.list} onSortEnd={this.onSortEnd} useDragHandle/>;
     }
   }
 
   /** Function that changes the order of the list items. */
-  function rankChange(list, itemNum, destNum) {
+  function handleRemove(list, itemNum) {
     
-    let items = list.state.items;
+    let newItems = list.state.items;
+    newItems.splice(itemNum, 1);
 
-    if (destNum >= items.length) {
-      destNum = items.length;
-    }
-
-    destNum -= 1;
-
-    const savedItem = items[itemNum];
-    items.splice(itemNum, 1);
-
-    items.splice(destNum, 0, savedItem);
-
-    list.state.items = items;
+    list.setState({items: newItems});
 
   }
 
@@ -658,7 +494,7 @@ const auth = firebase.auth();
   function UserInfo(props) {
     return (
       <div id='user-info'>
-        <img src={props.photoURL} alt='Profile'/><br /><br />
+        <img src={props.photoURL} alt='Profile' id='profilePic'/><br /><br />
         <p className='user-info'>Name: {props.firstName}</p>
         <p className='user-info'>Number of Rankings: {props.numRankings}</p>
       </div>
