@@ -1,14 +1,13 @@
 import React from 'react';
 // import ReactDOM from 'react-dom';
 import './index.css';
+import SortableComponent from './Sortable.js';
 
 import firebase from 'firebase/app';
 import 'firebase/firestore';
 import 'firebase/auth';
 
 import { useAuthState } from 'react-firebase-hooks/auth';
-import {SortableContainer, SortableElement, sortableHandle} from 'react-sortable-hoc';
-import arrayMove from 'array-move';
 
 firebase.initializeApp({
   apiKey: 'AIzaSyBblldZeCvHZy5fDfTzxgTWPYoT568KCzQ',
@@ -50,11 +49,11 @@ const auth = firebase.auth();
   // =========Rank Engine=====================
 
   const db = firebase.firestore();
-  const userRef = db.collection('users');
+  const userRef = db.collection('users2');
   // var dragSrcID = null;
   // var dragSrcClass = null;
 
-  /** Definition of a User */
+  /** Definition of a User, the component that contains the RankingLists */
   class User extends React.Component {
     constructor(props) {
       super(props);
@@ -68,19 +67,20 @@ const auth = firebase.auth();
         loaded: false,
         rankingData: [],
         renderedItems: [],
-        userExists: true
-        // dataNames: [],
+        userExists: true,
+        adding: false
       }
 
       this.getUserRankings();
     }
 
+    /** async function to get the data from firestor, allows for an 'await' call. */
     async getMarker(ref) {
       const snapshot = await ref.get()
       return snapshot.docs.map(doc => [doc.id, doc.data()]);
     }
 
-    /** Customizes the rankings to those picked by the user. */
+    /** Fetches the ranking data from Firestore. */
     getUserRankings() {
 
       let thisUser = this;
@@ -102,6 +102,7 @@ const auth = firebase.auth();
       });
     }
 
+    /** Creates "renderedItems", the array of RankingList elements, to be rendered. */
     renderLists() {
       const renderedItems = [];
 
@@ -115,10 +116,11 @@ const auth = firebase.auth();
           <div className='rankingList'>
             <RankingList
               items={ranking[1]['items']}
-              listDisplayName = {ranking[1]['displayName']}
+              listDisplayName = {ranking[1]['listDisplayName']}
               listName = {ranking[0]}
               userEmail = {this.state.email}
               type = {ranking[1]['type']}
+              user={this}
             />
           </div>
         )
@@ -127,6 +129,23 @@ const auth = firebase.auth();
       this.setState({renderedItems: renderedItems});
     }
 
+    /** Allows the user who already has at least one list to build a new one. */
+    addList() {
+      // let renIt = this.state.renderedItems;
+      // renIt.push(<RankingList
+      //   items={[]}
+      //   listDisplayName = {''}
+      //   listName = {''}
+      //   userEmail = {this.state.email}
+      //   type = {''}
+      //   user={this}
+      // />);
+      // this.setState({renderedItems: renIt});
+      // this.forceUpdate();
+      console.log("In Progress");
+    }
+
+    /** Renders the User Component. */
     render() {
 
       const loaded = this.state.loaded;
@@ -141,12 +160,24 @@ const auth = firebase.auth();
               photoURL={this.state.photoUrl}
             /> : null}
 
-            </section>
+          </section>
 
-            <section id='rankings' className='col-md-10'>
+          <section id='rankings' className='col-md-10'>
 
-            {this.state.rankingData.length ? (loaded ? this.state.renderedItems : null) : <NewList user={this} />}<br />
-            <button id='add' className='btn btn-info' onClick={(e) => e.preventDefault()}>Add List</button>
+            {this.state.rankingData.length ? (loaded ? this.state.renderedItems : null) :
+            
+            <div className='rankingList'>
+              <RankingList
+                items={[]}
+                listDisplayName = {''}
+                listName = {''}
+                userEmail = {this.state.email}
+                type = {''}
+                user={this}
+              />
+            </div>}<br />
+
+            <button id='add' className='btn btn-info' onClick={() => this.addList()}>Add List</button>
 
           </section>
 
@@ -162,21 +193,16 @@ const auth = firebase.auth();
     /** Constructor for the Ranked List, loads data. */
     constructor(props) {
       super(props);
-      
+
       this.state = {
         items: props.items,
         userEmail: props.userEmail,
+        listName: props.listName,
+        listDisplayName: props.listDisplayName,
+        type: props.type,
         editmode: false,
+        createMode: false,
       }
-      
-      this.handleRemove = this.handleRemove.bind(this)
-    }
-
-    handleRemove(i) {
-      let newItems = this.state.items;
-      newItems.splice(i, 1);
-
-      this.setState({items: newItems})
     }
 
     /** Uses a prompt to add an item to the end of the list */
@@ -188,30 +214,43 @@ const auth = firebase.auth();
         newItems.push(newItem);
         this.setState({items: newItems, draggingOn: false});
       }
+
+      this.handleSave();
     }
 
     /** Saves the updated rankings to the user's profile. */
     handleSave() {
       let rankRef = userRef.doc(this.state.userEmail).collection('rankings');
-      rankRef.doc(this.props.listName)
-        .set({
-          displayName: this.props.listDisplayName,
+      console.log(this.state.listName);
+      let thisDoc = rankRef.doc(this.state.listName);
+      thisDoc.set({
+          listDisplayName: this.state.listDisplayName,
           items: this.state.items,
-          type: this.props.type
+          type: this.state.type
         })
+
+      console.log(this.props.user);
+      // userRef.doc(this.state.userEmail).update({
+      //   userLists: this.props.user.state.rankingData});
       this.setState({editMode: false});
     }
 
-    /** Saves the updated rankings to the user's profile. */
     turnOnEditing() {
-      this.setState({editMode: true});
+      this.setState({editMode: true})
     }
+
+    /** Creates a new Ranked List from the New Item Component */
 
     /** Renders the ranked list in order of the saved data. */
     render() {
       
       const items = this.state.items;
       let editMode = this.state.editMode;
+      let createMode = this.state.createMode;
+
+      if (!items.length) {
+        createMode = true;
+      }
 
       let itemsList = []
 
@@ -224,70 +263,24 @@ const auth = firebase.auth();
 
       return (
         <div>
-          <h4>{this.props.listDisplayName}</h4>
+          <h4>{this.state.listDisplayName}</h4>
           
-          {editMode ? 
+          {createMode ? 
+          <NewList list={this} user={this.props.user}/> :
+          (editMode ? 
           <SortableComponent items={this.state.items} list={this} handleRemove={(i) => this.handleRemove(i)}/> : 
           <ol>{itemsList}</ol>
-          }
+          )}
           <button id='add' className='btn btn-info' onClick={() => this.handleAdd()}>Add Item</button>
-          {editMode ?
+          {createMode ?
+          <button id='editSave' className='btn btn-warning' onClick={() => this.handleCreate()}>Create List</button> :
+          (editMode ?
           <button id='editSave' className='btn btn-secondary' onClick={() => this.handleSave()}>Save List</button> :
           <button id='editSave' className='btn btn-secondary' onClick={() => this.turnOnEditing()}>Edit List</button>
-          }
+          )}
         </div>
       )
     }
-  }
-
-  //============Drag and Drop Functionality============
-
-  const DragHandle = sortableHandle(() => <img src='https://cdn2.iconfinder.com/data/icons/font-awesome/1792/reorder-512.png' alt=':::' className='sortable'/>);
-  const SortableItem = SortableElement(({value}) => 
-    <li className="sortable">
-      <DragHandle />
-      &nbsp;&nbsp;{value}
-      {/* <button onClick={handleRemove(list,index)}>Hi</button> */}
-    </li>);
- 
-  const SortableList = SortableContainer(({items, list}) => {
-    return (
-      <ol>
-        {items.map((value, index) => (
-          <SortableItem key={`item-${value}`} id={console.log(index)} list={list} index={index} value={value} />
-        ))}
-      </ol>
-    );
-  });
-  
-  class SortableComponent extends React.Component {
-    constructor(props) {
-      super(props);
-      this.state = {
-        items: props.items,
-      };
-    }
-
-    onSortEnd = ({oldIndex, newIndex}) => {
-      this.setState(({items}) => ({
-        items: arrayMove(items, oldIndex, newIndex),
-      }));
-      this.props.list.setState({
-        items: this.state.items});
-    };
-    render() {
-      return <SortableList items={this.state.items} list={this.props.list} onSortEnd={this.onSortEnd} useDragHandle/>;
-    }
-  }
-
-  /** Function that changes the order of the list items. */
-  function handleRemove(list, itemNum) {
-    
-    let newItems = list.state.items;
-    newItems.splice(itemNum, 1);
-
-    list.setState({items: newItems});
-
   }
 
   class NewList extends React.Component {
@@ -297,7 +290,7 @@ const auth = firebase.auth();
         user: props.user,
         userInfo: props.user.props.user,
         entries: 3,
-        displayName: '',
+        listDisplayName: '',
         listName: '',
         type: '',
         items: [null, null, null],
@@ -316,44 +309,24 @@ const auth = firebase.auth();
 
     /** Handles the event when the user submits an updated ranking for an item/ */
     handleSubmit(event) {
+      event.preventDefault();
 
-      const thisUser = this.state.user;
-      const userDoc = userRef.doc(this.state.userInfo.email);
-      userDoc.get();
-      let fixedItems = this.state.items;
-
-      if (!this.state.items.length || this.state.type === '' 
-      || this.state.listName === '' || this.state.displayName === '') {
-        alert('FAILURE');
-        return;
-      }
-
-      
-      for (let i = 0; i < fixedItems.length; i++) {
-        if (fixedItems[i] === null) {
-          fixedItems.splice(i, 1);
-        }
-      }
-
-      let newRankingData = thisUser.state.rankingData;
-      newRankingData.push(this.state.listName);
-      thisUser.setState({rankingData: newRankingData});
-
-      userDoc.update({
-        userLists: thisUser.state.rankingData
-      })
-      
-      userDoc.collection('rankings').doc(this.state.listName).set({
-        type: this.state.type,
+      this.props.list.setState({
         items: this.state.items,
-        displayName: this.state.displayName
+        userEmail: this.state.userEmail,
+        listName: this.state.listName,
+        listDisplayName: this.state.listDisplayName,
+        type: this.state.type,
       });
+
+      console.log(this.props.list.state.listName);
+      // this.props.list.handleSave();
     }
 
     /** Handles the input of text in the title secton of the form */
     getTitle(event) {
       const val = event.target.value;
-      this.setState({displayName: val});
+      this.setState({listDisplayName: val});
     }
 
     /** Handles the rank setting of items put into the new list form. */
@@ -409,34 +382,32 @@ const auth = firebase.auth();
       }
 
       return(
-        <div className='rankingList'>
-          <form onSubmit={this.handleSubmit} id='newUserForm' autoComplete='new-password' autoCorrect='off' spellCheck='off'>
-            <label id='title'>TITLE:&nbsp;</label>
-            <label>
-              <input type='text' className='form-control' id='displayName' onChange={this.getTitle} autoComplete='off' />
-            </label><br /><br />
-            
-            <label id='rankingAddHeader'>Ranked Items:</label><br />
-            {addOptions}
-            <button type="button" id="addLineButton" onClick={this.handleAddLine}>Add Line</button><label>&nbsp;|&nbsp;</label>
-            <button type="button" id="removeLineButton" onClick={this.handleRemoveLine}>Remove Line</button><br /><br />
+        <form id='newUserForm' autoComplete='new-password' autoCorrect='off' spellCheck='off'>
+          <label id='title'>TITLE:&nbsp;</label>
+          <label>
+            <input type='text' className='form-control' id='listDisplayName' onChange={this.getTitle} autoComplete='off' />
+          </label><br /><br />
+          
+          <label id='rankingAddHeader'>Ranked Items:</label><br />
+          {addOptions}
+          <button type="button" id="addLineButton" onClick={this.handleAddLine}>Add Line</button><label>&nbsp;|&nbsp;</label>
+          <button type="button" id="removeLineButton" onClick={this.handleRemoveLine}>Remove Line</button><br /><br />
 
 
-            <label>List Name (list the list's official username):&nbsp;</label>
-            <label><select className='form-control' onChange={this.selectListName}>
-              <option>--Select List Name--</option>
-              {rankingOptions}
-            </select></label><br />
+          <label>List Name (list the list's official username):&nbsp;</label>
+          <label><select className='form-control' onChange={this.selectListName}>
+            <option>--Select List Name--</option>
+            {rankingOptions}
+          </select></label><br />
 
-            <label>List Category:&nbsp;</label>
-            <label><select className='form-control' onChange={this.selectType}>
-              <option>--Select List Name--</option>
-              {typeOptions}
-            </select></label><br />
+          <label>List Category:&nbsp;</label>
+          <label><select className='form-control' onChange={this.selectType}>
+            <option>--Select List Name--</option>
+            {typeOptions}
+          </select></label><br />
 
-            <input type='submit' className='btn btn-light' value='Save List' />
-          </form>
-        </div>
+          <button className='btn btn-light' onClick={this.handleSubmit}>Save List</button>
+        </form>
       )
     }
   }
