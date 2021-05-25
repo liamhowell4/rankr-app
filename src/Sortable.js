@@ -19,7 +19,7 @@ const SortableList = SortableContainer(({items, removeItem}) => {
   return (
     <ol>
       {items.map((value, index) => (
-          <SortableItem key={`item-${value}`} id={index} index={index} value={[value, index]}  removeItem={removeItem}/>
+          <SortableItem key={`item-${value}`} id={index} index={index} value={[value, index]} removeItem={removeItem}/>
       ))}
     </ol>
   );
@@ -43,7 +43,8 @@ export default class SortableComponent extends React.Component {
 }
 
   onSortEnd = ({oldIndex, newIndex}) => {
-    this.setState(({items}) => ({
+    this.setState(({items}) => (
+      {
       items: arrayMove(items, oldIndex, newIndex),
     }));
     this.props.list.setState({
@@ -51,6 +52,7 @@ export default class SortableComponent extends React.Component {
   };
 
   render() {
-    return <SortableList items={this.state.items} list={this.props.list} removeItem={this.removeItem} useDragHandle/>;
+    return <SortableList onSortEnd={this.onSortEnd} items={this.state.items} list={this.props.list} 
+      removeItem={this.removeItem} useDragHandle/>;
   }
 }

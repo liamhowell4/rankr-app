@@ -67,6 +67,7 @@ const auth = firebase.auth();
         loaded: false,
         rankingData: [],
         renderedItems: [],
+        lists: [],
         userExists: true,
         adding: false
       }
@@ -74,10 +75,21 @@ const auth = firebase.auth();
       this.getUserRankings();
     }
 
-    /** async function to get the data from firestor, allows for an 'await' call. */
-    async getMarker(ref) {
+    /** 
+     * Async function to get the rankings data for a specific user from firestore, 
+     * allows for an 'await' call. Returns a promise with an array of arrays. Each inner 
+     * array has the id of each list and the data (rankings, name, type) as its two 
+     * elements.
+     */
+    async getRankingsFromFS(ref) {
       const snapshot = await ref.get()
       return snapshot.docs.map(doc => [doc.id, doc.data()]);
+    }
+
+    /** async function that gets the basic data for an individual user. */
+    async getUserLists(ref) {
+      const snapshot = await ref.get()
+      return snapshot.data();
     }
 
     /** Fetches the ranking data from Firestore. */
@@ -94,10 +106,15 @@ const auth = firebase.auth();
         }
       });
 
-      let rankRef = userRef.doc(this.state.email).collection('rankings');
+      let userDoc = userRef.doc(this.state.email)
+      let rankRef = userDoc.collection('rankings');
 
-      this.getMarker(rankRef).then(function(results) {
-        thisUser.setState({rankingData : results, loaded: true});
+      this.getUserLists(userDoc).then(function(results) {
+        thisUser.setState({lists: results.userLists});
+      })
+
+      this.getRankingsFromFS(rankRef).then(function(results) {
+        thisUser.setState({rankingData: results, loaded: true});
         thisUser.renderLists();
       });
     }
@@ -109,7 +126,7 @@ const auth = firebase.auth();
       for (let i = 0; i < this.state.rankingData.length; i++) {
 
         const ranking = this.state.rankingData[i];
-
+        console.log(ranking);
         // ranking['listName'] = this.state.dataNames[i];
         
         renderedItems.push(
@@ -131,18 +148,17 @@ const auth = firebase.auth();
 
     /** Allows the user who already has at least one list to build a new one. */
     addList() {
-      // let renIt = this.state.renderedItems;
-      // renIt.push(<RankingList
-      //   items={[]}
-      //   listDisplayName = {''}
-      //   listName = {''}
-      //   userEmail = {this.state.email}
-      //   type = {''}
-      //   user={this}
-      // />);
-      // this.setState({renderedItems: renIt});
-      // this.forceUpdate();
-      console.log("In Progress");
+      let rd = this.state.rankingData;
+      
+      let newList = ['', {
+        'listDisplayName': '',
+        'items': [],
+        'type': '' 
+      }]
+
+      rd.push(newList);
+
+      this.renderLists();
     }
 
     /** Renders the User Component. */
@@ -196,6 +212,7 @@ const auth = firebase.auth();
 
       this.state = {
         items: props.items,
+        user: props.user,
         userEmail: props.userEmail,
         listName: props.listName,
         listDisplayName: props.listDisplayName,
@@ -218,28 +235,29 @@ const auth = firebase.auth();
       this.handleSave();
     }
 
-    /** Saves the updated rankings to the user's profile. */
+    /** Saves the updated rankings to the user's document in Firestore. */
     handleSave() {
-      let rankRef = userRef.doc(this.state.userEmail).collection('rankings');
-      console.log(this.state.listName);
-      let thisDoc = rankRef.doc(this.state.listName);
-      thisDoc.set({
+      let thisUser = userRef.doc(this.state.userEmail);
+      let rankRef = thisUser.collection('rankings');
+      let thisRanking = rankRef.doc(this.state.listName);
+      thisRanking.set({
           listDisplayName: this.state.listDisplayName,
           items: this.state.items,
-          type: this.state.type
+          type: this.state.type,
         })
-
-      console.log(this.props.user);
-      // userRef.doc(this.state.userEmail).update({
-      //   userLists: this.props.user.state.rankingData});
-      this.setState({editMode: false});
+      thisUser.update({
+        userLists: this.state.user.state.lists,
+      });
+      
+      if (this.state.editMode) {
+        this.setState({editMode: false});
+      }
     }
 
+    /** Switches between viewing and editing mode. */
     turnOnEditing() {
       this.setState({editMode: true})
     }
-
-    /** Creates a new Ranked List from the New Item Component */
 
     /** Renders the ranked list in order of the saved data. */
     render() {
@@ -248,17 +266,24 @@ const auth = firebase.auth();
       let editMode = this.state.editMode;
       let createMode = this.state.createMode;
 
+      console.log(items);
       if (!items.length) {
         createMode = true;
       }
 
       let itemsList = []
 
-      for (let i = 0; i < items.length; i += 1) {
-        itemsList.push(
-        <li key={i}>
-          {items[i]}
-        </li>)
+      if (!createMode) {
+        for (let i = 0; i < items.length; i += 1) {
+          itemsList.push(
+          <li key={i}>
+            {items[i]}
+          </li>)
+        }
+
+        if (!editMode) {
+          this.handleSave();
+        }
       }
 
       return (
@@ -266,12 +291,12 @@ const auth = firebase.auth();
           <h4>{this.state.listDisplayName}</h4>
           
           {createMode ? 
-          <NewList list={this} user={this.props.user}/> :
+          <NewList list={this} user={this.state.user}/> :
           (editMode ? 
           <SortableComponent items={this.state.items} list={this} handleRemove={(i) => this.handleRemove(i)}/> : 
           <ol>{itemsList}</ol>
           )}
-          <button id='add' className='btn btn-info' onClick={() => this.handleAdd()}>Add Item</button>
+          {createMode? {} : <button id='add' className='btn btn-info' onClick={() => this.handleAdd()}>Add Item</button>}
           {createMode ?
           <button id='editSave' className='btn btn-warning' onClick={() => this.handleCreate()}>Create List</button> :
           (editMode ?
@@ -313,11 +338,15 @@ const auth = firebase.auth();
 
       this.props.list.setState({
         items: this.state.items,
-        userEmail: this.state.userEmail,
         listName: this.state.listName,
         listDisplayName: this.state.listDisplayName,
         type: this.state.type,
       });
+
+      const thisUser = this.props.user;
+      let userLists = thisUser.state.lists;
+      userLists.push(this.state.listName);
+      thisUser.setState({lists: userLists});
 
       console.log(this.props.list.state.listName);
       // this.props.list.handleSave();
