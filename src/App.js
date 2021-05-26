@@ -50,8 +50,7 @@ const auth = firebase.auth();
 
   const db = firebase.firestore();
   const userRef = db.collection('users2');
-  // var dragSrcID = null;
-  // var dragSrcClass = null;
+  const existingLists = db.collection('lists');
 
   /** Definition of a User, the component that contains the RankingLists */
   class User extends React.Component {
@@ -89,6 +88,7 @@ const auth = firebase.auth();
     /** async function that gets the basic data for an individual user. */
     async getUserLists(ref) {
       const snapshot = await ref.get()
+      // console.log(snapshot.data());
       return snapshot.data();
     }
 
@@ -97,22 +97,29 @@ const auth = firebase.auth();
 
       let thisUser = this;
 
+      // Creates a new document is the user doesn't exist, then stops the loading of data
       userRef.doc(this.state.email).get()
       .then(function(doc) {
         if(!doc.exists) {
           userRef.doc(thisUser.state.email).set({name: thisUser.state.name, userLists: []})
           thisUser.setState({userExists: false, loaded: true})
+          console.log('checker')
           return;
         }
       });
 
+      // Sets reference variables for abstractions in this method
       let userDoc = userRef.doc(this.state.email)
       let rankRef = userDoc.collection('rankings');
+      // console.log(rankRef);
 
+      // Loads in the names of the lists that each user has ranked.
       this.getUserLists(userDoc).then(function(results) {
         thisUser.setState({lists: results.userLists});
       })
 
+      // Loads the rankings that the User has created, in the form of a map of 
+      // the list name and then the list info.
       this.getRankingsFromFS(rankRef).then(function(results) {
         thisUser.setState({rankingData: results, loaded: true});
         thisUser.renderLists();
@@ -126,7 +133,7 @@ const auth = firebase.auth();
       for (let i = 0; i < this.state.rankingData.length; i++) {
 
         const ranking = this.state.rankingData[i];
-        console.log(ranking);
+        // console.log(ranking);
         // ranking['listName'] = this.state.dataNames[i];
         
         renderedItems.push(
@@ -161,7 +168,9 @@ const auth = firebase.auth();
       this.renderLists();
     }
 
-    /** Renders the User Component. */
+    /** Renders the User Component, with options for whether the data is
+     * loaded in, if the user exists.
+     */
     render() {
 
       const loaded = this.state.loaded;
@@ -180,7 +189,7 @@ const auth = firebase.auth();
 
           <section id='rankings' className='col-md-10'>
 
-            {this.state.rankingData.length ? (loaded ? this.state.renderedItems : null) :
+            {this.state.userExists ? (loaded ? this.state.renderedItems : null) :
             
             <div className='rankingList'>
               <RankingList
@@ -266,7 +275,7 @@ const auth = firebase.auth();
       let editMode = this.state.editMode;
       let createMode = this.state.createMode;
 
-      console.log(items);
+      // console.log(items);
       if (!items.length) {
         createMode = true;
       }
@@ -296,9 +305,9 @@ const auth = firebase.auth();
           <SortableComponent items={this.state.items} list={this} handleRemove={(i) => this.handleRemove(i)}/> : 
           <ol>{itemsList}</ol>
           )}
-          {createMode? {} : <button id='add' className='btn btn-info' onClick={() => this.handleAdd()}>Add Item</button>}
+          {createMode ? null : <button id='add' className='btn btn-info' onClick={() => this.handleAdd()}>Add Item</button>}
           {createMode ?
-          <button id='editSave' className='btn btn-warning' onClick={() => this.handleCreate()}>Create List</button> :
+          null :
           (editMode ?
           <button id='editSave' className='btn btn-secondary' onClick={() => this.handleSave()}>Save List</button> :
           <button id='editSave' className='btn btn-secondary' onClick={() => this.turnOnEditing()}>Edit List</button>
@@ -393,6 +402,8 @@ const auth = firebase.auth();
       let rankingOptions = [];
       let typeOptions = [];
 
+      console.log('check');
+
       for (let i = 0; i < this.state.entries; i++) {
         addOptions.push(
         <>
@@ -435,7 +446,7 @@ const auth = firebase.auth();
             {typeOptions}
           </select></label><br />
 
-          <button className='btn btn-light' onClick={this.handleSubmit}>Save List</button>
+          <button className='btn btn-warning' onClick={this.handleSubmit}>Create List</button>
         </form>
       )
     }
