@@ -45,7 +45,6 @@ export default function App() {
 
     getListsGlobal().then(function(results) {
       existingListNames = results.allLists;
-      console.log(existingListNames);
     })
 
     return (
@@ -53,7 +52,7 @@ export default function App() {
       
         <div className='row' id='user-info-rankings'>
 
-          {user ? <User user={auth.currentUser} /> : <SignIn></SignIn>}
+          {user ? <User user={auth.currentUser} /> : <SignIn />}
         
         </div>
 
@@ -121,7 +120,7 @@ class User extends React.Component {
       if(!doc.exists) {
         userRef.doc(thisUser.state.email).set({name: thisUser.state.name, userLists: []})
         thisUser.setState({userExists: false, loaded: true})
-        console.log('checker')
+        console.log('User Not Created Check')
         return;
       }
     });
@@ -129,10 +128,13 @@ class User extends React.Component {
     // Sets reference variables for abstractions in this method
     let userDoc = userRef.doc(this.state.email)
     let rankRef = userDoc.collection('rankings');
-    // console.log(rankRef);
+    console.log('Get User Rankings Checker')
 
     // Loads in the names of the lists that each user has ranked.
     this.getUserLists(userDoc).then(function(results) {
+      if (!results) {
+        return
+      }
       thisUser.setState({lists: results.userLists});
     })
 
@@ -148,11 +150,13 @@ class User extends React.Component {
   renderLists() {
     const renderedItems = [];
 
+    if (!this.state.rankingData.length) {
+      this.addList();
+    }
+
     for (let i = 0; i < this.state.rankingData.length; i++) {
 
       const ranking = this.state.rankingData[i];
-      // console.log(ranking);
-      // ranking['listName'] = this.state.dataNames[i];
       
       renderedItems.push(
         <div className='rankingList'>
@@ -193,12 +197,16 @@ class User extends React.Component {
 
     const loaded = this.state.loaded;
 
+    // if (!this.state.rankingData.length) {
+    //   this.addList();
+    // }
+
     return (loaded ? 
       <>
       
         <section id='user-info' className='col-md-2'>
 
-          {loaded ? <UserInfo firstName={this.state.firstName} 
+          {loaded ? <UserProfile firstName={this.state.firstName} 
             numRankings={this.state.rankingData.length} 
             photoURL={this.state.photoUrl}
           /> : null}
@@ -207,18 +215,9 @@ class User extends React.Component {
 
         <section id='rankings' className='col-md-10'>
 
-          {this.state.userExists ? (loaded ? this.state.renderedItems : null) :
-          
-          <div className='rankingList'>
-            <RankingList
-              items={[]}
-              listDisplayName = {''}
-              listName = {''}
-              userEmail = {this.state.email}
-              type = {''}
-              user={this}
-            />
-          </div>}<br />
+          {loaded ? this.state.renderedItems : null }
+
+          <br />
 
           <button id='add' className='btn btn-info' onClick={() => this.addList()}>Add List</button>
 
@@ -292,8 +291,7 @@ class RankingList extends React.Component {
     const items = this.state.items;
     let editMode = this.state.editMode;
     let createMode = this.state.createMode;
-
-    // console.log(items);
+    
     if (!items.length) {
       createMode = true;
     }
@@ -320,16 +318,16 @@ class RankingList extends React.Component {
         {createMode ? 
         <NewList list={this} user={this.state.user}/> :
         (editMode ? 
-        <SortableComponent items={this.state.items} list={this} handleRemove={(i) => this.handleRemove(i)}/> : 
-        <ol>{itemsList}</ol>
+        <>
+          <SortableComponent items={this.state.items} list={this} handleRemove={(i) => this.handleRemove(i)}/>
+          <button id='editSave' className='btn btn-secondary' onClick={() => this.handleSave()}>Save List</button>
+        </> : 
+        <>
+          <ol>{itemsList}</ol>
+          <button id='editSave' className='btn btn-secondary' onClick={() => this.turnOnEditing()}>Edit List</button>
+        </>
         )}
         {createMode ? null : <button id='add' className='btn btn-info' onClick={() => this.handleAdd()}>Add Item</button>}
-        {createMode ?
-        null :
-        (editMode ?
-        <button id='editSave' className='btn btn-secondary' onClick={() => this.handleSave()}>Save List</button> :
-        <button id='editSave' className='btn btn-secondary' onClick={() => this.turnOnEditing()}>Edit List</button>
-        )}
       </div>
     )
   }
@@ -337,10 +335,34 @@ class RankingList extends React.Component {
 
 // =============== List Creation ====================
 
+class NewList extends React.Component {
+
+  render() {
+    let choosing = true;
+    let create = false;
+
+    return (
+      <>
+        <h1>Choose </h1>
+        {choosing ? 
+          <form>
+            <button>Ji</button>
+            <hr />
+            <button>Hi</button>
+          </form> :
+          (create ? <CreateList list={this.props.list} user={this.props.user} /> : null)
+        
+        
+        }
+      </>
+    )
+  }
+}
+
 /** Waystation, allows the user to choose if they want to create a new list
  * or edit a pre-existing one.
  */
-class NewList extends React.Component {
+class CreateList extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
@@ -351,6 +373,7 @@ class NewList extends React.Component {
       listName: '',
       type: '',
       items: [null, null, null],
+      names: ['hi', 'hi2'],
       types: ['food', 'music', 'film']
     };
 
@@ -378,9 +401,6 @@ class NewList extends React.Component {
     let userLists = thisUser.state.lists;
     userLists.push(this.state.listName);
     thisUser.setState({lists: userLists});
-
-    console.log(this.props.list.state.listName);
-    // this.props.list.handleSave();
   }
 
   /** Handles the input of text in the title secton of the form */
@@ -424,7 +444,7 @@ class NewList extends React.Component {
     let rankingOptions = [];
     let typeOptions = [];
 
-    console.log('check');
+    console.log('New List Creation check');
 
     for (let i = 0; i < this.state.entries; i++) {
       addOptions.push(
@@ -436,11 +456,11 @@ class NewList extends React.Component {
     }
 
     for (let i = 0; i < this.state.types.length; i++){
-      typeOptions.push(<option>{this.state.types[i]}</option>)
+      typeOptions.push(<option key={this.state.types[i]}>{this.state.types[i]}</option>)
     }
 
     for (let i = 0; i < this.state.names.length; i++){
-      rankingOptions.push(<option>{this.state.names[i]}</option>)
+      rankingOptions.push(<option key={this.state.names[i]}>{this.state.names[i]}</option>)
     }
 
     return(
@@ -458,13 +478,13 @@ class NewList extends React.Component {
 
         <label>List Name (list the list's official username):&nbsp;</label>
         <label><select className='form-control' onChange={this.selectListName}>
-          <option>--Select List Name--</option>
+          <option key ="select">--Select List Name--</option>
           {rankingOptions}
         </select></label><br />
 
         <label>List Category:&nbsp;</label>
         <label><select className='form-control' onChange={this.selectType}>
-          <option>--Select List Name--</option>
+          <option key ="selectCat">--Select List Category--</option>
           {typeOptions}
         </select></label><br />
 
@@ -524,7 +544,7 @@ function SignOut() {
 }
 
 /** User Identifier */
-function UserInfo(props) {
+function UserProfile(props) {
   return (
     <div id='user-info'>
       <img src={props.photoURL} alt='Profile' id='profilePic'/><br /><br />

@@ -9,7 +9,7 @@ import arrayMove from 'array-move';
 const DragHandle = sortableHandle(() => <img src='https://i0.wp.com/css-tricks.com/wp-content/uploads/2012/10/threelines.png' alt=':::' className='sortable'/>);
 
 const SortableItem = SortableElement(({value, removeItem}) => 
-  <li className="sortable">
+  <li className="sortable" key={value[0]}>
     <DragHandle />
     &nbsp;{value[0]}
     <button className='btn btn-danger remove' onClick={() => removeItem(value[1])}>Remove Item</button>
