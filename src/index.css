@@ -12,8 +12,8 @@ html{
 
 body{
   background-color: unset;
-   padding:20px;
-   margin:0;
+  padding:20px;
+  margin:0;
 }
 
 section{
@@ -21,12 +21,12 @@ section{
 }
 
 #header{
-    width: 100%;
-    margin: auto;
-    padding-top:45px;
-    background-size: contain;
-    height: 150px;
-    background: var(--main-purple);
+  width: 100%;
+  margin: auto;
+  padding-top:45px;
+  background-size: contain;
+  height: 150px;
+  background: var(--main-purple);
 }
 
 h1{
@@ -65,14 +65,14 @@ h1{
 
 textarea, select, input, button { outline: none; }
 
-div.rankingList {
+div.ranking-list {
   border: 3px solid var(--main-purple);
   border-radius: 5px;
   padding: 20px;
   margin-bottom: 10px;
 }
 
-div.rankingList:hover {
+div.ranking-list:hover {
   border: 5px solid var(--main-purple);
   padding: 18px;
 }
@@ -137,6 +137,10 @@ button.remove {
   margin-top: 3px!important;
   font-size: 12px;
   float: right !important;
+}
+
+form#new-list {
+  text-align: center;
 }
 
 p.user-info {
