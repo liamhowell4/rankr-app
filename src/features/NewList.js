@@ -1,6 +1,6 @@
 import React from 'react';
-import './index.css';
-import { RankingList, getExistingList, existingListNames } from './App.js';
+import '../index.css';
+import { RankingList, getExistingList, existingListNames, listRef } from '../App.js';
 
 /** Waystation to decide to create a new list or reorder a pre-created one */
 export default class NewList extends React.Component {

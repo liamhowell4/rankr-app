@@ -1,6 +1,6 @@
 import React from 'react';
 // import ReactDOM from 'react-dom';
-import './index.css';
+import '../index.css';
 import {SortableContainer, SortableElement, sortableHandle} from 'react-sortable-hoc';
 import arrayMove from 'array-move';
 

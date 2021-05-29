@@ -1,8 +1,8 @@
 import React from 'react';
 // import ReactDOM from 'react-dom';
 import './index.css';
-import SortableComponent from './Sortable.js';
-import NewList from './NewList.js';
+import SortableComponent from './features/Sortable.js';
+import NewList from './features/NewList.js';
 
 import firebase from 'firebase/app';
 import 'firebase/firestore';
@@ -24,7 +24,7 @@ firebase.initializeApp({
 const auth = firebase.auth();
 const db = firebase.firestore();
 const userRef = db.collection('users2');
-const listRef = db.collection('lists');
+export const listRef = db.collection('lists');
 export let existingListNames = new Set();
 
 /** async function that gets the data for all lists that have been created. */
@@ -38,6 +38,8 @@ export async function getExistingList(listName) {
   const snapshot = await listRef.doc(listName).get()
   return snapshot.data();
 }
+
+
   
 /** The rankr App itself */
 export default function App() {
