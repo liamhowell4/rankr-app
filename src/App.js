@@ -232,6 +232,12 @@ class RankingList extends React.Component {
   constructor(props) {
     super(props);
 
+    let editMode = true;
+
+    if (!props.editMode) {
+      editMode = false;
+    }
+
     this.state = {
       items: props.items,
       user: props.user,
@@ -239,7 +245,7 @@ class RankingList extends React.Component {
       listName: props.listName,
       listDisplayName: props.listDisplayName,
       type: props.type,
-      editmode: false,
+      editMode: editMode,
       createMode: false,
     }
 
@@ -340,6 +346,7 @@ class RankingList extends React.Component {
 
 // =============== List Creation ====================
 
+/** Waystation to decide to create a new list or reorder a pre-created one */
 class NewList extends React.Component {
 
   constructor(props) {
@@ -347,18 +354,51 @@ class NewList extends React.Component {
     this.state = {
       createMode: false,
       orderMode: false,
-      chooseMode: true
+      chooseMode: true,
+      listName: ''
     }
 
     this.createList = this.createList.bind(this);
+    this.orderList = this.orderList.bind(this);
+    this.selectListName = this.selectListName.bind(this);
 
     const thisList = this.props.list;
     thisList.setState({listDisplayName: 'New List Creation'})
   }
 
+  /** Function that runs when the User decides to create a new list,
+   * results in the component become a CreateList Element
+   */
   createList(event) {
     event.preventDefault();
     this.setState({createMode: true, chooseMode: false});
+  }
+
+  /** Function that runs when the User decides to reorder and existing list,
+   * results in the component become a ReorderExistingList Element
+   */
+  orderList(event) {
+    event.preventDefault();
+    this.setState({orderMode: true, chooseMode: false});
+  }
+
+  /** Updates state to take into account existing list name selection */
+  selectListName(event) {
+    this.setState({listName: event.target.value});
+  }
+
+  componentDidMount() {
+    if (document.getElementById('exListButton')) {
+      document.getElementById('exListButton').disabled = true;
+    }
+  }
+
+  componentDidUpdate() {
+    if (this.state.listName === '--Select List Name--' || !(this.state.listName)) {
+      document.getElementById('exListButton').disabled = true;
+    } else {
+      document.getElementById('exListButton').disabled = false;
+    }
   }
 
   render() {
@@ -387,7 +427,9 @@ class NewList extends React.Component {
                 <option key ="select">--Select List Name--</option>
                 {listOptions}
               </select></label>
-              <button className='btn btn-primary'>Use Existing List</button>
+              <button className='btn btn-primary' id='exListButton' onClick={this.orderList}>
+                Use Existing List
+              </button>
               <hr />
             </>
           : null}
@@ -395,7 +437,7 @@ class NewList extends React.Component {
             <button className='btn btn-secondary' onClick={this.createList}>Create New List</button>
           </form> :
           (createMode ? <CreateList list={this.props.list} user={this.props.user} /> 
-          : (orderMode ? <CreateList  list={this.props.list} user={this.props.user} /> 
+          : (orderMode ? <ReorderExistingList  list={this.props.list} user={this.props.user} /> 
           : null))
         }
       </div>
@@ -417,7 +459,7 @@ class CreateList extends React.Component {
       listName: props.list.listName,
       type: props.list.type,
       items: [null, null, null],
-      names: ['beatles', 'marvel', 'bajaFresh'],
+      names: ['beatles', 'starwars', 'bajaFresh'],
       types: ['food', 'music', 'film']
     };
 
@@ -565,14 +607,14 @@ class ReorderExistingList extends RankingList {
   render() {
 
     return(
-      <div className='ranking-list'>
-        <h4>{this.state.listDisplayName}</h4>
-
-        <SortableComponent items={this.state.items} list={this} />
-
-        <button id='editSave' className='btn btn-secondary' onClick={this.handleSave}>Save List</button>
-        <button id='add' className='btn btn-info' onClick={this.handleAdd}>Add Item</button>
-      </div>
+      <RankingList
+        items={this.state.items}
+        listDisplayName = 'CUSTOM NAME'
+        listName = {this.state.listName}
+        type = {this.state.type}
+        user={this.state.user}
+        editMode={true}
+      />
     );
   }
 
