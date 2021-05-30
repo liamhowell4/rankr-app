@@ -112,6 +112,10 @@ export default class RankingList extends React.Component {
           console.error("Error removing document: ", error);
       });
 
+
+      // REEXAMINE THIS, BECAUSE USERS COULD CREATE A NEW LIST WITH THE SAME LISTNAME, 
+      // AND IF USERS HAVEN'T DELETED THE DEPRECATED LIST, THEY WILL NOT BE ABLE TO USE THE NEW LIST
+
       if (this.state.owner && window.confirm(
         'You are the owner of this list. Would you like to disable future users from ranking this list? (This will not affect users who have already ranked your list)'
       )) {
