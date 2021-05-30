@@ -88,7 +88,7 @@ export default class NewList extends React.Component {
                   {listOptions}
                 </select></label>
                 <button className='btn btn-primary' id='exListButton' onClick={this.orderList}>
-                  Use Existing List
+                  Rank Existing List
                 </button>
                 <hr />
               </>

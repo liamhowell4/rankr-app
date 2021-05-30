@@ -1,6 +1,6 @@
 import React from 'react';
 import '../index.css';
-import { listRef, userRef } from '../App.js';
+import { existingListNames, listRef, userRef } from '../App.js';
 import NewList from './NewList.js';
 import SortableComponent from './Sortable.js';
 
@@ -94,7 +94,7 @@ export default class RankingList extends React.Component {
   }
 
   handleListDelete() {
-    if (window.confirm('Are you sure you want to delete this list?')) {
+    if (window.confirm('Are you sure you want to delete this list? Page will reload')) {
       const thisUser = userRef.doc(this.state.userEmail);
       const rankRef = thisUser.collection('rankings');
       const thisRanking = rankRef.doc(this.state.listName);
@@ -111,6 +111,18 @@ export default class RankingList extends React.Component {
       }).catch((error) => {
           console.error("Error removing document: ", error);
       });
+
+      if (this.state.owner && window.confirm(
+        'You are the owner of this list. Would you like to disable future users from ranking this list? (This will not affect users who have already ranked your list)'
+      )) {
+        listRef.delete(this.state.listName);
+        existingListNames.delete(this.state.listName);
+        listRef.doc('GLOBAL').update({
+          allLists: Array.from(existingListNames)
+        })
+      }
+
+      window.location.reload();
     }
   }
 
