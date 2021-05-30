@@ -1,8 +1,7 @@
 import React from 'react';
 // import ReactDOM from 'react-dom';
 import './index.css';
-import SortableComponent from './features/Sortable.js';
-import NewList from './features/NewList.js';
+import RankingList from './rank-engine/RankingList.js'
 
 import firebase from 'firebase/app';
 import 'firebase/firestore';
@@ -23,7 +22,7 @@ firebase.initializeApp({
 
 const auth = firebase.auth();
 const db = firebase.firestore();
-const userRef = db.collection('users2');
+export const userRef = db.collection('users2');
 export const listRef = db.collection('lists');
 export let existingListNames = new Set();
 
@@ -69,8 +68,6 @@ export default function App() {
     );
   
 }
-
-// =========Rank Engine=====================
 
 /** Definition of a User, the component that contains the RankingLists */
 class User extends React.Component {
@@ -224,126 +221,6 @@ class User extends React.Component {
 
       </>
       : <p>Loading Element...</p>)
-  }
-}
-
-//===============The List Component===========================
-
-/** Basic Ranking List with changeable Rankings */
-export class RankingList extends React.Component {
-  /** Constructor for the Ranked List, loads data. */
-  constructor(props) {
-    super(props);
-
-    let editMode = true;
-
-    if (!props.editMode) {
-      editMode = false;
-    }
-
-    this.state = {
-      items: props.items,
-      user: props.user,
-      userEmail: props.user.state.email,
-      listName: props.listName,
-      listDisplayName: props.listDisplayName,
-      type: props.type,
-      editMode: editMode,
-      createMode: false,
-    }
-
-    this.handleAdd = this.handleAdd.bind(this);
-    this.handleSave = this.handleSave.bind(this);
-    this.turnOnEditing = this.turnOnEditing.bind(this);
-  }
-
-  /** Uses a prompt to add an item to the end of the list */
-  handleAdd() {
-    let newItems = this.state.items;
-    let newItem = prompt('What item would you like to add?');
-    // this.draggingEngine(this, false);
-    if (newItem !== '' && newItem !== null){
-      newItems.push(newItem);
-      this.setState({items: newItems, draggingOn: false});
-    }
-
-    this.handleSave();
-  }
-
-  /** Saves the updated rankings to the user's document in Firestore. */
-  handleSave() {
-    let thisUser = userRef.doc(this.state.userEmail);
-    let rankRef = thisUser.collection('rankings');
-    let thisRanking = rankRef.doc(this.state.listName);
-    thisRanking.set({
-        listDisplayName: this.state.listDisplayName,
-        items: this.state.items,
-        type: this.state.type,
-      })
-    thisUser.update({
-      userLists: Array.from(this.state.user.state.lists),
-    });
-    
-    if (this.state.editMode) {
-      this.setState({editMode: false});
-    }
-  }
-
-  /** Switches between viewing and editing mode. */
-  turnOnEditing() {
-    this.setState({editMode: true})
-  }
-
-  /** Renders the ranked list in order of the saved data. */
-  render() {
-    
-    const items = this.state.items;
-    let editMode = this.state.editMode;
-    let newListMode = this.state.createMode;
-    
-    if (!items.length) {
-      newListMode = true;
-    }
-
-    let itemsList = []
-
-    if (!newListMode) {
-      for (let i = 0; i < items.length; i += 1) {
-        itemsList.push(
-        <li key={i}>
-          {items[i]}
-        </li>)
-      }
-
-      if (!editMode) {
-        this.handleSave();
-      }
-    }
-
-    return (
-      <>
-        {newListMode ? 
-        <NewList list={this} user={this.state.user}/> :
-        <div className='ranking-list'>
-          <h4>{this.state.listDisplayName}</h4>
-          {editMode ? 
-          <>
-            <SortableComponent items={this.state.items} list={this} />
-            <button id='editSave' className='btn btn-secondary' onClick={this.handleSave}>Save List</button>
-          </>
-          :
-          <> 
-            <ol>{itemsList}</ol>
-            <button id='editSave' className='btn btn-secondary' onClick={this.turnOnEditing}>Edit List</button>
-          </>
-          }
-          {newListMode ? null : <button id='add' className='btn btn-info' 
-          onClick={this.handleAdd}>Add Item</button>}
-        </div>
-        }
-        
-      </>
-    )
   }
 }
 

@@ -175,7 +175,13 @@ p.user-info {
 }
 
 #listDisplayName {
-  font-size: 200%;
+  height: 40px;
+  font-size: 24px;
+}
+
+h4 {
+  height: 40px;
+  padding: 5.5px 0 0 7px;
 }
 
 select.form-control {

@@ -1,6 +1,7 @@
 import React from 'react';
 import '../index.css';
-import { RankingList, getExistingList, existingListNames, listRef } from '../App.js';
+import { getExistingList, existingListNames } from '../App.js';
+import RankingList from './RankingList.js';
 
 /** Waystation to decide to create a new list or reorder a pre-created one */
 export default class NewList extends React.Component {
@@ -76,30 +77,32 @@ export default class NewList extends React.Component {
     }
 
     return (
-      <div className='ranking-list'>
+      <>
         {chooseMode ? 
-          <form id='new-list'>
-          {listOptions.length ? 
-            <>
-              <label><select className='form-control' onChange={this.selectListName}>
-                <option key ="select">--Select List Name--</option>
-                {listOptions}
-              </select></label>
-              <button className='btn btn-primary' id='exListButton' onClick={this.orderList}>
-                Use Existing List
-              </button>
-              <hr />
-            </>
-          : null}
-          
-            <button className='btn btn-secondary' onClick={this.createList}>Create New List</button>
-          </form> :
+          <div className='ranking-list'>
+            <form id='new-list'>
+            {listOptions.length ? 
+              <>
+                <label><select className='form-control' onChange={this.selectListName}>
+                  <option key ="select">--Select List Name--</option>
+                  {listOptions}
+                </select></label>
+                <button className='btn btn-primary' id='exListButton' onClick={this.orderList}>
+                  Use Existing List
+                </button>
+                <hr />
+              </>
+            : null}
+              <button className='btn btn-secondary' onClick={this.createList}>Create New List</button>
+            </form>
+          </div>
+          :
           (createMode ? <CreateList list={this.props.list} user={this.props.user} /> 
           : (orderMode ? <ReorderExistingList listName={this.state.listName} 
             list={this.props.list} user={this.props.user} /> 
           : null))
         }
-      </div>
+      </>
     )
   }
 }
@@ -210,32 +213,34 @@ export default class NewList extends React.Component {
     }
 
     return(
-      <form id='newUserForm' autoComplete='new-password' autoCorrect='off' spellCheck='off'>
-        <label id='title'>TITLE:&nbsp;</label>
-        <label>
-          <input type='text' className='form-control' id='listDisplayName' onChange={this.getTitle} autoComplete='off' />
-        </label><br /><br />
-        
-        <label id='rankingAddHeader'>Ranked Items:</label><br />
-        {addOptions}
-        <button type="button" id="addLineButton" onClick={this.handleAddLine}>Add Line</button><label>&nbsp;|&nbsp;</label>
-        <button type="button" id="removeLineButton" onClick={this.handleRemoveLine}>Remove Line</button><br /><br />
+      <div className='ranking-list'>
+        <form id='newUserForm' autoComplete='new-password' autoCorrect='off' spellCheck='off'>
+          <label id='title'>TITLE:&nbsp;</label>
+          <label>
+            <input type='text' className='form-control' id='listDisplayName' onChange={this.getTitle} autoComplete='off' />
+          </label><br /><br />
+          
+          <label id='rankingAddHeader'>Ranked Items:</label><br />
+          {addOptions}
+          <button type="button" id="addLineButton" onClick={this.handleAddLine}>Add Line</button><label>&nbsp;|&nbsp;</label>
+          <button type="button" id="removeLineButton" onClick={this.handleRemoveLine}>Remove Line</button><br /><br />
 
 
-        <label>List Name (list the list's official username):&nbsp;</label>
-        <label><select className='form-control' onChange={this.selectListName}>
-          <option key ="select">--Select List Name--</option>
-          {rankingOptions}
-        </select></label><br />
+          <label>List Name (list the list's official username):&nbsp;</label>
+          <label><select className='form-control' onChange={this.selectListName}>
+            <option key ="select">--Select List Name--</option>
+            {rankingOptions}
+          </select></label><br />
 
-        <label>List Category:&nbsp;</label>
-        <label><select className='form-control' onChange={this.selectType}>
-          <option key ="selectCat">--Select List Category--</option>
-          {typeOptions}
-        </select></label><br />
+          <label>List Category:&nbsp;</label>
+          <label><select className='form-control' onChange={this.selectType}>
+            <option key ="selectCat">--Select List Category--</option>
+            {typeOptions}
+          </select></label><br />
 
-        <button className='btn btn-warning' onClick={this.handleSubmit}>Create List</button>
-      </form>
+          <button className='btn btn-warning' onClick={this.handleSubmit}>Create List</button>
+        </form>
+      </div>
     )
   }
 }
