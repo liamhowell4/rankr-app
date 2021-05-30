@@ -8,18 +8,18 @@ import arrayMove from 'array-move';
 
 const DragHandle = sortableHandle(() => <img src='https://i0.wp.com/css-tricks.com/wp-content/uploads/2012/10/threelines.png' alt=':::' className='sortable'/>);
 
-const SortableItem = SortableElement(({value, removeItem}) => 
+const SortableItem = SortableElement(({value, removeItem, owner}) => 
   <li className="sortable" key={value[0]}>
     <DragHandle />
     &nbsp;{value[0]}
-    <button className='btn btn-danger remove' onClick={() => removeItem(value[1])}>Remove Item</button>
+    {owner ? <button className='btn btn-danger remove' onClick={() => removeItem(value[1])}>Remove Item</button> : null}
   </li>);
 
-const SortableList = SortableContainer(({items, removeItem}) => {
+const SortableList = SortableContainer(({items, removeItem, owner}) => {
   return (
     <ol>
       {items.map((value, index) => (
-          <SortableItem key={`item-${value}`} id={index} index={index} value={[value, index]} removeItem={removeItem}/>
+          <SortableItem key={`item-${value}`} id={index} owner={owner} index={index} value={[value, index]} removeItem={removeItem}/>
       ))}
     </ol>
   );
@@ -30,6 +30,7 @@ export default class SortableComponent extends React.Component {
     super(props);
     this.state = {
       items: props.items,
+      owner: props.owner
     };
 
     this.removeItem = this.removeItem.bind(this);
@@ -52,7 +53,11 @@ export default class SortableComponent extends React.Component {
   };
 
   render() {
-    return <SortableList onSortEnd={this.onSortEnd} items={this.state.items} list={this.props.list} 
-      removeItem={this.removeItem} useDragHandle/>;
+    return (
+    <>
+      <SortableList onSortEnd={this.onSortEnd} items={this.state.items} list={this.props.list} 
+        removeItem={this.removeItem} owner={this.state.owner} useDragHandle/>
+    </>
+    );
   }
 }

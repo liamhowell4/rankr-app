@@ -37,8 +37,6 @@ export async function getExistingList(listName) {
   const snapshot = await listRef.doc(listName).get()
   return snapshot.data();
 }
-
-
   
 /** The rankr App itself */
 export default function App() {
@@ -163,6 +161,7 @@ class User extends React.Component {
             listName = {ranking[0]}
             type = {ranking[1]['type']}
             user={this}
+            owner={ranking[1]['owner']}
           />
         </div>
       )
@@ -214,7 +213,7 @@ class User extends React.Component {
 
           <br />
 
-          {this.state.addingList ? null: <button id='add' className='btn btn-info' onClick={() => this.addList()}>
+          {this.state.addingList ? null: <button className='btn btn-info list-edit' onClick={() => this.addList()}>
           Add List</button>}
 
         </section>

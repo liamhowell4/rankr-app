@@ -1,6 +1,6 @@
 import React from 'react';
 import '../index.css';
-import { userRef } from '../App.js';
+import { listRef, userRef } from '../App.js';
 import NewList from './NewList.js';
 import SortableComponent from './Sortable.js';
 
@@ -28,6 +28,7 @@ export default class RankingList extends React.Component {
       type: props.type,
       editMode: editMode,
       createMode: false,
+      owner: props.owner,
     }
 
     this.handleAdd = this.handleAdd.bind(this);
@@ -35,6 +36,8 @@ export default class RankingList extends React.Component {
     this.turnOnEditing = this.turnOnEditing.bind(this);
     this.getTitle = this.getTitle.bind(this);
     this.handleListDelete = this.handleListDelete.bind(this);
+
+    this.sorter=React.createRef();
   }
 
   /** Uses a prompt to add an item to the end of the list */
@@ -47,7 +50,11 @@ export default class RankingList extends React.Component {
       this.setState({items: newItems, draggingOn: false});
     }
 
-    this.handleSave();
+    listRef.doc(this.state.listName).update({
+      items: newItems
+    })
+
+    this.handleSave(false);
   }
 
   /** Handles the input of text in the title secton of the form */
@@ -57,7 +64,7 @@ export default class RankingList extends React.Component {
   }
 
   /** Saves the updated rankings to the user's document in Firestore. */
-  handleSave() {
+  handleSave(turnOffEditing = true) {
     const thisUser = userRef.doc(this.state.userEmail);
     const rankRef = thisUser.collection('rankings');
     const thisRanking = rankRef.doc(this.state.listName);
@@ -65,19 +72,19 @@ export default class RankingList extends React.Component {
     let thisUserLists = this.state.user.state.lists;
     thisUserLists.add(this.state.listName);
 
-    this.state.user.setState({addingList: false});
-
     thisRanking.set({
         listDisplayName: this.state.listDisplayName,
         items: this.state.items,
         type: this.state.type,
+        owner: this.state.owner
       })
     thisUser.update({
       userLists: Array.from(thisUserLists),
     });
     
-    if (this.state.editMode) {
+    if (this.state.editMode && turnOffEditing) {
       this.setState({editMode: false});
+      this.state.user.setState({addingList: false});
     }
   }
 
@@ -104,6 +111,13 @@ export default class RankingList extends React.Component {
       }).catch((error) => {
           console.error("Error removing document: ", error);
       });
+    }
+  }
+
+  componentDidUpdate() {
+    if (!this.state.owner && this.state.editMode) {
+      document.getElementById('add-item').disabled = true;
+      document.getElementById('add-item').innerHTML = 'Add Item (Creator Only)';
     }
   }
 
@@ -144,18 +158,18 @@ export default class RankingList extends React.Component {
               <input type='text' className='form-control' onChange={this.getTitle} id='listDisplayName' 
               autoComplete='off' defaultValue={this.state.listDisplayName}/>
             </label>
-            <SortableComponent items={this.state.items} list={this} />
-            <button id='editSave' className='btn btn-secondary' onClick={this.handleSave}>Save List</button>
-            <button id='add' className='btn btn-info' onClick={this.handleAdd}>Add Item</button>
-            <button id='delete' className='btn btn-danger' onClick={this.handleListDelete}>Delete List</button>
+            <SortableComponent items={this.state.items} list={this} owner={this.state.owner} />
+            <button className='btn btn-secondary list-edit' onClick={this.handleSave}>Save List</button>
+            <button id='add-item' className='btn btn-info list-edit' onClick={this.handleAdd}>Add Item</button>
+            <button className='btn btn-danger list-edit' onClick={this.handleListDelete}>Delete List</button>
           </>
           :
           <> 
             <h4>{this.state.listDisplayName}</h4>
             <ol>{itemsList}</ol>
-            <button id='editSave' className='btn btn-secondary' onClick={this.turnOnEditing}>Edit List</button>
-            {newListMode ? null : <button id='add' className='btn btn-info' 
-            onClick={this.handleAdd}>Add Item</button>}
+            <button className='btn btn-secondary list-edit' onClick={this.turnOnEditing}>Edit List</button>
+            {/* {newListMode ? null : <button id='add' className='btn btn-info' 
+            onClick={this.handleAdd}>Add Item</button>} */}
           </>
           }
         </div>

@@ -1,6 +1,6 @@
 import React from 'react';
 import '../index.css';
-import { getExistingList, existingListNames } from '../App.js';
+import { getExistingList, existingListNames, listRef } from '../App.js';
 import RankingList from './RankingList.js';
 
 /** Waystation to decide to create a new list or reorder a pre-created one */
@@ -128,11 +128,11 @@ export default class NewList extends React.Component {
     const thisList = this.props.list;
     thisList.setState({listDisplayName: ''})
 
-    this.getTitle = this.getTitle.bind(this);
+    this.getListDisplayName = this.getListDisplayName.bind(this);
     this.handleSubmit = this.handleSubmit.bind(this);
     this.handleRankSet = this.handleRankSet.bind(this);
     this.selectType = this.selectType.bind(this);
-    this.selectListName = this.selectListName.bind(this);
+    this.getListName = this.getListName.bind(this);
     this.handleAddLine = this.handleAddLine.bind(this);
     this.handleRemoveLine = this.handleRemoveLine.bind(this);
   }
@@ -141,21 +141,40 @@ export default class NewList extends React.Component {
   handleSubmit(event) {
     event.preventDefault();
 
+    const thisUser = this.props.user;
+    let userLists = thisUser.state.lists;
+
+    if (existingListNames.has(this.state.listName)) {
+      window.alert('List Name already exists, choose a new name!');
+      return;
+    }
+
+    existingListNames.add(this.state.listName);
+
+    listRef.doc('GLOBAL').update({
+      allLists: Array.from(existingListNames)
+    })
+
+    listRef.doc(this.state.listName).set({
+      items: this.state.items,
+      type: this.state.type,
+      owner: thisUser.state.email
+    })
+
     this.props.list.setState({
       items: this.state.items,
       listName: this.state.listName,
       listDisplayName: this.state.listDisplayName,
       type: this.state.type,
+      owner: true,
     });
 
-    const thisUser = this.props.user;
-    let userLists = thisUser.state.lists;
     userLists.add(this.state.listName);
     thisUser.setState({lists: userLists, addingList: false});
   }
 
   /** Handles the input of text in the title secton of the form */
-  getTitle(event) {
+  getListDisplayName(event) {
     const val = event.target.value;
     this.setState({listDisplayName: val});
   }
@@ -174,8 +193,9 @@ export default class NewList extends React.Component {
   }
 
   /** Sets the type of the list being made */
-  selectListName(event) {
-    this.setState({listName: event.target.value});
+  getListName(event) {
+    const val = event.target.value;
+    this.setState({listName: val});
   }
 
   /** Allows the user to add a new Item to the Ranking */
@@ -217,7 +237,7 @@ export default class NewList extends React.Component {
         <form id='newUserForm' autoComplete='new-password' autoCorrect='off' spellCheck='off'>
           <label id='title'>TITLE:&nbsp;</label>
           <label>
-            <input type='text' className='form-control' id='listDisplayName' onChange={this.getTitle} autoComplete='off' />
+            <input type='text' className='form-control' id='listDisplayName' onChange={this.getListDisplayName} autoComplete='off' />
           </label><br /><br />
           
           <label id='rankingAddHeader'>Ranked Items:</label><br />
@@ -227,10 +247,10 @@ export default class NewList extends React.Component {
 
 
           <label>List Name (list the list's official username):&nbsp;</label>
-          <label><select className='form-control' onChange={this.selectListName}>
-            <option key ="select">--Select List Name--</option>
-            {rankingOptions}
-          </select></label><br />
+          <label>
+            <input type='text' className='form-control' onChange={this.getListName} id='listName' autoComplete='off' />
+          </label>
+          <br />
 
           <label>List Category:&nbsp;</label>
           <label><select className='form-control' onChange={this.selectType}>
@@ -284,6 +304,7 @@ class ReorderExistingList extends React.Component {
             type = {this.state.type}
             user={this.state.user}
             editMode={true}
+            owner={false}
           />
         : null
         }

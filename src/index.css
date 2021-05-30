@@ -46,15 +46,9 @@ h1{
   border: 3px dotted #666;
 }
 
-#add{
+.list-edit{
   padding: 10px;
   margin: 10px 25px 10px 50px;
-  width: 200px;
-}
-
-#editSave{
-  padding: 10px;
-  margin: 10px 50px 10px 25px;
   width: 200px;
 }
 
